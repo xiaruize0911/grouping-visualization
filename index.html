@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>"战队"生成记——用数学和编程破解班级分组难题</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: white;
+            border-radius: 10px;
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+
+        header h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        header .author {
+            color: #666;
+            font-size: 1.1em;
+            margin-bottom: 5px;
+        }
+
+        header .abstract {
+            background: #f5f5f5;
+            padding: 15px;
+            margin-top: 20px;
+            border-left: 4px solid #667eea;
+            text-align: left;
+            color: #555;
+        }
+
+        .section {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .section h2 {
+            color: #667eea;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .section h3 {
+            color: #764ba2;
+            font-size: 1.3em;
+            margin-top: 20px;
+            margin-bottom: 15px;
+        }
+
+        .interactive-demo {
+            background: #f9f9f9;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .control-group {
+            margin: 15px 0;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .control-group label {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .control-group input,
+        .control-group select,
+        .control-group button {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+        }
+
+        .control-group button {
+            background: #667eea;
+            color: white;
+            border: none;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        .control-group button:hover {
+            background: #764ba2;
+        }
+
+        .visualization {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            min-height: 200px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .group {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            min-width: 100px;
+            text-align: center;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            animation: slideIn 0.5s ease-out;
+        }
+
+        .student {
+            display: inline-block;
+            background: #fff;
+            color: #667eea;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            line-height: 35px;
+            text-align: center;
+            font-weight: bold;
+            margin: 2px;
+            border: 2px solid #667eea;
+        }
+
+        .grouping-option {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 5px 0;
+            font-family: monospace;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin: 30px 0;
+        }
+
+        .formula {
+            background: #f5f5f5;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 15px 0;
+            font-style: italic;
+            color: #555;
+            overflow-x: auto;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        table th,
+        table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+        }
+
+        table th {
+            background: #667eea;
+            color: white;
+            font-weight: bold;
+        }
+
+        table tr:nth-child(even) {
+            background: #f5f5f5;
+        }
+
+        .result-box {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            color: #2e7d32;
+        }
+
+        .warning-box {
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            color: #e65100;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        footer {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            margin-top: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .comparison-item {
+            background: #f5f5f5;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .comparison-item h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .comparison-item .value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #764ba2;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.8em;
+            }
+
+            .section {
+                padding: 20px;
+            }
+
+            .control-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .control-group input,
+            .control-group select,
+            .control-group button {
+                width: 100%;
+            }
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .tab-button {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1em;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab-button.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            font-weight: bold;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>🎯 "战队"生成记</h1>
+            <h2 style="color: #764ba2; font-size: 1.3em;">用数学和编程破解班级分组难题</h2>
+            <div class="author">
+                <p><strong>作者：</strong>南京市凤凰花园城小学，五（9）班，夏睿妍</p>
+            </div>
+            <div class="abstract">
+                <p><strong>摘要：</strong>本文研究了学生分组问题的方案数，分析了不同分组方式的数学模型，目的在为方便且多样化的教学分组方式提供参考。</p>
+            </div>
+        </header>
+
+        <!-- 引言 -->
+        <div class="section">
+            <h2>📖 引言</h2>
+            <p>作为学生，我注意到，在课堂教学中，教师常常需要将学生分成若干小组以便于讨论和合作学习。然而，如何有效地进行分组，以及不同的分组方式会产生多少种不同的方案，成为了一个有趣且实用的问题。本项目旨在探讨学生分组问题的数学模型，并分析不同分组方式的方案数。
+            </p>
+        </div>
+
+        <!-- 问题描述 -->
+        <div class="section">
+            <h2>🤔 问题描述</h2>
+
+            <h3>基本问题</h3>
+            <p>假设有 <strong>n</strong>
+                名学生，教师希望将他们分成若干<strong>连续学号的小组</strong>。每个小组至少有一名学生，且每个学生只能属于一个小组。我们希望计算出所有可能的分组方案数。</p>
+
+            <h3>扩展问题</h3>
+            <ul style="margin-left: 20px;">
+                <li>✓ 每个小组至少有 <strong>min</strong> 名学生，至多有 <strong>max</strong> 名学生的分组方案数</li>
+                <li>✓ 指定某些学生必须在同一小组的分组方案数</li>
+                <li>✓ 指定小组数量的分组方案数</li>
+                <li>✓ 不限制小组成员的连续性，即允许任意学生组合成小组的分组方案数</li>
+            </ul>
+        </div>
+
+        <!-- 模型1：基本模型 -->
+        <div class="section">
+            <h2>🧮 数学模型</h2>
+
+            <h3>模型 1：基本模型（连续学号分组）</h3>
+            <p>学生分组问题的方案数随着学生人数的增加呈指数增长，具体为 \(2^{n-1}\)，其中 \(n\) 为学生人数。</p>
+
+            <div class="interactive-demo">
+                <h4>🎬 互动演示：基本模型</h4>
+                <div class="control-group">
+                    <label for="basicStudents">学生人数：</label>
+                    <input type="range" id="basicStudents" min="1" max="8" value="4" onchange="updateBasicValue()">
+                    <span id="basicStudentsValue" style="font-weight: bold; color: #667eea;">4</span>
+                </div>
+                <div class="control-group">
+                    <button onclick="visualizeBasicGrouping()" style="width: auto;">🎯 生成分组演示</button>
+                </div>
+                <div id="basicVisualization" class="visualization">点击"生成分组演示"查看不同的分组方案</div>
+                <div id="basicResults"></div>
+            </div>
+
+            <div class="formula">
+                <strong>基本模型公式：</strong> 方案数 = \(2^{n-1}\)<br>
+                <strong>原因：</strong> 在 \(n-1\) 个相邻学生之间，每个位置都可以选择"分开"或"不分开"，因此有 \(2^{n-1}\) 种方案。
+            </div>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>学生人数 (n)</th>
+                            <th>分组方案数</th>
+                            <th>公式</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>1</td>
+                            <td>\(2^0 = 1\)</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>2</td>
+                            <td>\(2^1 = 2\)</td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td>4</td>
+                            <td>\(2^2 = 4\)</td>
+                        </tr>
+                        <tr>
+                            <td>4</td>
+                            <td>8</td>
+                            <td>\(2^3 = 8\)</td>
+                        </tr>
+                        <tr>
+                            <td>5</td>
+                            <td>16</td>
+                            <td>\(2^4 = 16\)</td>
+                        </tr>
+                        <tr>
+                            <td>6</td>
+                            <td>32</td>
+                            <td>\(2^5 = 32\)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="basicChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 模型2：限制小组大小 -->
+        <div class="section">
+            <h3>模型 2：限制小组大小</h3>
+            <p>当每个小组的学生数量有最小值和最大值限制时，分组方案数会相应减少。</p>
+
+            <div class="interactive-demo">
+                <h4>🎬 互动演示：限制小组大小</h4>
+                <div class="control-group">
+                    <label for="limitStudents">学生人数：</label>
+                    <input type="range" id="limitStudents" min="1" max="10" value="5" onchange="updateLimitValue()">
+                    <span id="limitStudentsValue" style="font-weight: bold; color: #667eea;">5</span>
+                </div>
+                <div class="control-group">
+                    <label for="minSize">最少人数：</label>
+                    <input type="range" id="minSize" min="1" max="3" value="1" onchange="updateMinValue()">
+                    <span id="minSizeValue" style="font-weight: bold; color: #667eea;">1</span>
+                </div>
+                <div class="control-group">
+                    <label for="maxSize">最多人数：</label>
+                    <input type="range" id="maxSize" min="1" max="5" value="3" onchange="updateMaxValue()">
+                    <span id="maxSizeValue" style="font-weight: bold; color: #667eea;">3</span>
+                </div>
+                <div class="control-group">
+                    <button onclick="visualizeGroupingWithLimits()">计算方案</button>
+                </div>
+                <div id="limitResults"></div>
+            </div>
+
+            <div class="result-box" id="limitResultBox" style="display:none;"></div>
+        </div>
+
+        <!-- 模型3：指定学生必须同组 -->
+        <div class="section">
+            <h3>模型 3：指定学生必须在同一小组</h3>
+            <p>在实际教学中，可能会有一些学生需要被分在同一小组。我们可以将这些学生视为一个整体，然后计算剩余学生的分组方案数。</p>
+
+            <div class="interactive-demo">
+                <h4>🎬 互动演示：指定学生同组</h4>
+                <div class="control-group">
+                    <label for="fixedStudents">学生人数：</label>
+                    <input type="range" id="fixedStudents" min="2" max="10" value="5" onchange="updateFixedValue()">
+                    <span id="fixedStudentsValue" style="font-weight: bold; color: #667eea;">5</span>
+                </div>
+                <div class="control-group">
+                    <label for="fixedGroupSize">指定同组的学生数：</label>
+                    <input type="range" id="fixedGroupSize" min="2" max="5" value="2"
+                        onchange="updateFixedGroupValue()">
+                    <span id="fixedGroupSizeValue" style="font-weight: bold; color: #667eea;">2</span>
+                </div>
+                <div class="control-group">
+                    <button onclick="visualizeFixedGroup()">计算方案</button>
+                </div>
+                <div id="fixedResults"></div>
+            </div>
+
+            <div class="formula">
+                <strong>固定同组公式：</strong> 方案数 = \(2^{n-k}\)<br>
+                其中 \(n\) 为学生总数，\(k\) 为指定同组的学生数。
+            </div>
+
+            <div class="result-box" id="fixedResultBox" style="display:none;"></div>
+        </div>
+
+        <!-- 模型4：指定小组数 -->
+        <div class="section">
+            <h3>模型 4：指定小组数量</h3>
+            <p>教师可能希望将学生分成固定数量的小组。这种情况下使用第二类 Stirling 数。</p>
+
+            <div class="interactive-demo">
+                <h4>🎬 互动演示：指定小组数量</h4>
+                <div class="control-group">
+                    <label for="numStudents">学生人数：</label>
+                    <input type="range" id="numStudents" min="2" max="10" value="5" onchange="updateNumValue()">
+                    <span id="numStudentsValue" style="font-weight: bold; color: #667eea;">5</span>
+                </div>
+                <div class="control-group">
+                    <label for="numGroups">小组数量：</label>
+                    <input type="range" id="numGroups" min="1" max="5" value="2" onchange="updateGroupsValue()">
+                    <span id="numGroupsValue" style="font-weight: bold; color: #667eea;">2</span>
+                </div>
+                <div class="control-group">
+                    <button onclick="visualizeFixedGroupCount()">计算方案</button>
+                </div>
+                <div id="groupCountResults"></div>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="groupCountChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 模型5：任意组合分组（Bell 数） -->
+        <div class="section">
+            <h3>模型 5：任意组合分组（Bell 数）</h3>
+            <p>在某些情况下，教师可能希望允许学生自由组合成小组，而不要求小组成员的学号必须连续。这种情况下的分组方案数为 <strong>Bell 数</strong> \(B(n)\)。</p>
+
+            <div class="interactive-demo">
+                <h4>🎬 互动演示：任意组合分组</h4>
+                <div class="control-group">
+                    <label for="bellStudents">学生人数：</label>
+                    <input type="range" id="bellStudents" min="1" max="8" value="3" onchange="updateBellValue()">
+                    <span id="bellStudentsValue" style="font-weight: bold; color: #667eea;">3</span>
+                    <button onclick="visualizeBellGrouping()">生成方案</button>
+                </div>
+                <div id="bellVisualization" class="visualization">点击"生成方案"查看结果</div>
+                <div id="bellResults"></div>
+            </div>
+
+            <div class="formula">
+                <strong>Bell 数递推公式：</strong><br>
+                \(B(n+1) = \sum_{k=0}^{n} \binom{n}{k} B(k)\)<br>
+                其中 \(\binom{n}{k}\) 是二项式系数。
+            </div>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>n</th>
+                            <th>B(n)</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>0</td>
+                            <td>1</td>
+                            <td>空集只有一种分割</td>
+                        </tr>
+                        <tr>
+                            <td>1</td>
+                            <td>1</td>
+                            <td>1个元素只有一种分割</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>2</td>
+                            <td>\(\{\{1\},\{2\}\}, \{\{1,2\}\}\)</td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td>5</td>
+                            <td>3个元素有5种分割</td>
+                        </tr>
+                        <tr>
+                            <td>4</td>
+                            <td>15</td>
+                            <td>4个元素有15种分割</td>
+                        </tr>
+                        <tr>
+                            <td>5</td>
+                            <td>52</td>
+                            <td>5个元素有52种分割</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="bellChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 比较分析 -->
+        <div class="section">
+            <h2>📊 不同模型的比较分析</h2>
+            <p>下面对比了不同分组模型下的方案数差异：</p>
+
+            <div class="comparison-grid">
+                <div class="comparison-item">
+                    <h4>基本模型</h4>
+                    <p>连续分组</p>
+                    <div class="value" id="compBasic">2^(n-1)</div>
+                </div>
+                <div class="comparison-item">
+                    <h4>固定同组</h4>
+                    <p>2人必须同组</p>
+                    <div class="value" id="compFixed">2^(n-2)</div>
+                </div>
+                <div class="comparison-item">
+                    <h4>任意组合</h4>
+                    <p>Bell数 B(n)</p>
+                    <div class="value" id="compBell">增长更快</div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="comparisonChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 结论 -->
+        <div class="section">
+            <h2>🎓 研究结论</h2>
+            <ul style="margin-left: 20px;">
+                <li><strong>基本发现：</strong> 学生分组问题的基本模型方案数为 2^(n-1)，呈指数增长。</li>
+                <li><strong>扩展模型：</strong> 通过引入约束条件，可以生成各种变种模型，满足不同的教学需求。</li>
+                <li><strong>Bell 数应用：</strong> 不限制小组成员连续性的分组方案数为 Bell 数，增长速度更快。</li>
+                <li><strong>教学意义：</strong> 这些数学模型可以帮助教师做出更科学、数据驱动的分组决策。</li>
+            </ul>
+
+            <h3>📚 对教室教学的帮助</h3>
+            <ul style="margin-left: 20px;">
+                <li>提供多样化的分组方案</li>
+                <li>优化教学资源配置</li>
+                <li>促进个性化学习</li>
+                <li>支持数据驱动的教学决策</li>
+            </ul>
+        </div>
+
+        <!-- 编程实现 -->
+        <div class="section">
+            <h2>💻 编程实现</h2>
+            <p>以下展示了项目中使用的核心算法实现：</p>
+
+            <h3>算法 1：基本模型（动态规划）</h3>
+            <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto;">
+def count_groupings_dp(n):
+    dp = [0] * (n + 1)
+    dp[0] = 1
+    for i in range(1, n + 1):
+        for j in range(i):
+            dp[i] += dp[j]
+    return dp[n]
+
+# 时间复杂度: O(n²)
+# 空间复杂度: O(n)</pre>
+
+            <h3>算法 2：Bell 数计算</h3>
+            <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto;">
+def bell_number(n):
+    bell = [[0 for i in range(n+1)] for j in range(n+1)]
+    bell[0][0] = 1
+    for i in range(1, n+1):
+        bell[i][0] = bell[i-1][i-1]
+        for j in range(1, i+1):
+            bell[i][j] = bell[i][j-1] + bell[i-1][j-1]
+    return bell[n][0]</pre>
+        </div>
+
+        <footer>
+            <p>✨ 由夏睿妍创作 | 南京市凤凰花园城小学 五（9）班 | 2024</p>
+            <p>🌟 如需部署到 GitHub Pages，请参考项目文档</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
